@@ -22,7 +22,7 @@ php composer.phar require heavenconseil/socialcrawler:dev-master
 After installing, you need to require Composer's autoloader:
 
 ```php
-require __DIR__ . 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 ```
 
 ## Example usage
@@ -101,3 +101,5 @@ You can easily support more services (say [Tumblr](http://www.tumblr.com/docs/en
  __construct($applicationId, $applicationSecret = null, $applicationToken = null)
  fetch($query, $type, $since = null)
 ```
+
+You can benefit from the [Guzzle](https://github.com/guzzle/guzzle) HTTP framework for your Channel as it's already used by SocialCrawler.
