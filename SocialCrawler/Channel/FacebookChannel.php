@@ -30,7 +30,12 @@ class FacebookChannel extends Channel
         if (isset($since)) {
             $parameters['since'] = $since;
         }
-        $data = $this->facebook->api('search', $parameters);
+        try {
+            $data = $this->facebook->api('search', $parameters);
+        } catch (\Exception $e) {
+            \SocialCrawler\Crawler::log($this, \SocialCrawler\Crawler::LOG_ERROR, $e);
+            return false;
+        }
 
         return $this->parse($data, $type);
     }

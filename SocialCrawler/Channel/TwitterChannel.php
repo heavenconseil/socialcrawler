@@ -26,7 +26,12 @@ class TwitterChannel extends Channel
         if (isset($since)) {
             $options['query']['since_id'] = $since;
         }
-        $data = $this->api->get('search/tweets.json', array(), $options)->send()->json();
+        try {
+            $data = $this->api->get('search/tweets.json', array(), $options)->send()->json();
+        } catch (\Exception $e) {
+            \SocialCrawler\Crawler::log($this, \SocialCrawler\Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
+            return false;
+        }
 
         return $this->parse($data, $type);
     }
