@@ -7,6 +7,9 @@ use Monolog\Handler\StreamHandler;
 
 class Crawler
 {
+    /**
+     * Constants used by the logger
+     */
     const LOG_DISABLED  = 999;
     const LOG_NORMAL    = Logger::INFO;
     const LOG_VERBOSE   = Logger::DEBUG;
@@ -18,6 +21,22 @@ class Crawler
     private $channels;
     private $options;
 
+    /**
+     * Initializes a Crawler instance
+     *
+     * The configuration:
+     * - channels: An associative array in the following format
+     *     - channel:   The classname of the Channel that will be used (FacebookChannel, InstagramChannel, ...)
+     *         - id:        The Channel API App ID
+     *         - secret:    The Channel API App secret
+     *         - token:     The Channel API user Access Token
+     *         - since:     If set, asks the API to find data from the specified timestamp
+     * - log: An associative array in the following format
+     *     - path:  The destination where the log file will be written (default: SocialCrawler base directory)
+     *     - level: The minimum level required for a log to be recorded (default: Crawler::LOG_NORMAL)
+     *
+     * @param array $options The configuration options
+     */
     public function __construct($options) {
         // Setting options
         if (!is_array($options)) {
@@ -41,6 +60,13 @@ class Crawler
         }
     }
 
+    /**
+     * Asks the registered Channels to find media entries containing the specified hashtag
+     *
+     * @param string $query The keyword, or hashtag used in the search
+     *
+     * @return object The global data retrieved by the registered Channels
+     */
     public function fetch($query) {
         self::log($this, self::LOG_NORMAL, 'Fetch started', array('channels' => array_keys($this->channels), 'query' => $query));
 
@@ -67,6 +93,14 @@ class Crawler
         return $output;
     }
 
+    /**
+     * Logs custom information throughout the Crawler activity
+     *
+     * @param class     $context    The caller instance (useful when using Crawler::LOG_VERBOSE)
+     * @param int       $logLevel   The level of the message that should be logged
+     * @param string    $message    The content of the message
+     * @param array     $parameters Useful data that should be logged with the message
+     */
     public static function log($context, $logLevel, $message, $parameters = array()) {
         if (self::$logLevel == self::LOG_VERBOSE && false !== get_class($context)) {
             $parameters['class'] = get_class($context);
