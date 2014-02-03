@@ -47,7 +47,11 @@ class Crawler
         $output = array();
         foreach ($this->channels as $channelName => $channel) {
             $timer = microtime(true);
-            $output[$channelName] = $channel->fetch($query, isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_IMAGES_VIDEOS);
+            $output[$channelName] = $channel->fetch(
+                $query,
+                isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_IMAGES_VIDEOS,
+                isset($this->options['channels'][$channelName]['since']) ? $this->options['channels'][$channelName]['since'] : null
+            );
 
             if (false !== $output[$channelName]) {
                 $count = count($output[$channelName]->data);
