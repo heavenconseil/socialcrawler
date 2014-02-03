@@ -2,13 +2,13 @@
 
 namespace SocialCrawler\Channel;
 
-class Channel
+abstract class Channel
 {
-    const FACEBOOK              = 'FacebookChannel';
-    const INSTAGRAM             = 'InstagramChannel';
-    const TWITTER               = 'TwitterChannel';
-
     const MEDIA_IMAGES_VIDEOS   = 'images+videos';
     const MEDIA_IMAGES          = 'images';
     const MEDIA_VIDEOS          = 'videos';
+
+    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null) { }
+
+    public function fetch($query, $type, $since = null) { }
 }
