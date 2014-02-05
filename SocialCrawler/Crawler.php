@@ -54,8 +54,12 @@ class Crawler
         $this->channels = array();
         foreach ($options['channels'] as $channel => $config) {
             $className = 'SocialCrawler\\Channel\\' . $channel;
-            if (class_exists($className) && isset($config['id'])) {
-                $this->channels[$channel] = new $className($config['id'], isset($config['secret']) ? $config['secret'] : null, isset($config['token']) ? $config['token'] : null);
+            if (class_exists($className) && isset($config['id']) && strlen($config['id']) > 0) {
+                $this->channels[$channel] = new $className(
+                    $config['id'],
+                    isset($config['secret']) && strlen($config['secret']) > 0 ? $config['secret'] : null,
+                    isset($config['token']) && strlen($config['token']) > 0 ? $config['token'] : null
+                );
             }
         }
     }
@@ -76,7 +80,7 @@ class Crawler
             $output[$channelName] = $channel->fetch(
                 $query,
                 isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_IMAGES_VIDEOS,
-                isset($this->options['channels'][$channelName]['since']) ? $this->options['channels'][$channelName]['since'] : null
+                isset($this->options['channels'][$channelName]['since']) && strlen($this->options['channels'][$channelName]['since']) > 0 ? $this->options['channels'][$channelName]['since'] : null
             );
 
             if (false !== $output[$channelName]) {
