@@ -14,9 +14,19 @@ The recommended way to install SocialCrawler is through [Composer](http://getcom
 ```bash
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
+```
 
-# Add SocialCrawler as a dependency
-php composer.phar require heavenconseil/socialcrawler:dev-master
+Then add SocialCrawler as a dependency in your `composer.json` file.
+```javascript
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "git@github.com:heavenconseil/socialcrawler.git"
+    }
+],
+"require": {
+    "heavenconseil/socialcrawler": "dev-master"
+}
 ```
 
 After installing, you need to require Composer's autoloader:
