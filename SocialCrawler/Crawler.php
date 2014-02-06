@@ -30,6 +30,7 @@ class Crawler
      *         - id:        The Channel API App ID
      *         - secret:    The Channel API App secret
      *         - token:     The Channel API user Access Token
+     *         - media:     The media type that will be fetched (default: Channel::MEDIA_IMAGES_VIDEOS)
      *         - since:     If set, asks the API to find data from the specified timestamp
      * - log: An associative array in the following format
      *     - path:  The destination where the log file will be written (default: SocialCrawler base directory)

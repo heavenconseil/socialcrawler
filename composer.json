@@ -1,10 +1,10 @@
 {
     "name": "heavenconseil/socialcrawler",
     "type": "library",
-    "description": "PHP library that crawls social networks looking for items containing a specific hashtag",
+    "description": "A PHP library that crawls social networks looking for items containing a specific hashtag.",
     "keywords": ["PHP", "Crawler", "Facebook", "Instagram", "Twitter", "hashtags", "API"],
-    "license": "proprietary",
-    "version": "0.9.0-dev",
+    "license": "MIT",
+    "version": "0.9.0",
     "authors": [
         {
             "name": "Dhaya Benmessaoud",
