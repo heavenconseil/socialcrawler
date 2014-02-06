@@ -50,9 +50,11 @@ class InstagramChannel extends Channel
                         'username'  => $entry['user']['username'],
                     ),
                     'description'   => isset($entry['caption']['text']) ? $entry['caption']['text'] : '',
+                    'link'          => $entry['link'],
+                    'source'        => '',
+                    'thumbnail'     => $entry['images']['low_resolution']['url'],
                     'type'          => $entry['type'],
                     'raw'           => $entry,
-                    'thumbnail'     => $entry['images']['low_resolution']['url'],
                 );
 
                 if ($entry['type'] === 'image') {

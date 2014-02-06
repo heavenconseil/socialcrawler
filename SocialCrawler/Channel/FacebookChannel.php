@@ -62,6 +62,7 @@ class FacebookChannel extends Channel
                         'username'  => $this->get_username($entry['from']['id']),
                     ),
                     'description'   => isset($entry['caption']) ? $entry['caption'] : (isset($entry['description']) ? $entry['description'] : (isset($entry['name']) ? $entry['name'] : '')),
+                    'link'          => $entry['link'],
                     'source'        => $media_url,
                     'thumbnail'     => $this->get_media_thumbnail($entry),
                     'type'          => $entry['type'] === 'photo' ? 'image' : 'video',

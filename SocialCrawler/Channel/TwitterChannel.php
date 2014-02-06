@@ -7,6 +7,7 @@ use Guzzle\Plugin\Oauth\OAuthPlugin;
 
 class TwitterChannel extends Channel
 {
+    const SITE_URL = 'https://twitter.com/';
     const API_URL = 'https://api.twitter.com/1.1';
     private $api;
 
@@ -54,6 +55,7 @@ class TwitterChannel extends Channel
                     'username'  => $entry['user']['screen_name'],
                 ),
                 'description'   => $entry['text'],
+                'link'          => self::SITE_URL . $entry['user']['screen_name'] . '/status/' . $entry['id_str'],
                 'source'        => $entry['entities']['media'][0]['media_url_https'] . ':large',
                 'thumbnail'     => $entry['entities']['media'][0]['media_url_https'] . ':small',
                 'type'          => 'image',
