@@ -3,7 +3,7 @@
 namespace SocialCrawler\Channel;
 
 use Guzzle\Http\Client;
-use Guzzle\Plugin\Oauth\OAuthPlugin;
+use Guzzle\Plugin\Oauth\OauthPlugin;
 
 class TwitterChannel extends Channel
 {
@@ -13,7 +13,7 @@ class TwitterChannel extends Channel
 
     public function __construct($applicationId, $applicationSecret, $applicationToken = null) {
         $this->api = new Client(self::API_URL);
-        $this->api->addSubscriber(new OAuthPlugin(array(
+        $this->api->addSubscriber(new OauthPlugin(array(
             'consumer_key'      => $applicationId,
             'consumer_secret'   => $applicationSecret,
         )));
