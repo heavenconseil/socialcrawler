@@ -13,6 +13,10 @@ abstract class Channel
     const MEDIA_TEXT          = 'text';
     const MEDIA_ALL           = 'all';
 
+    const TYPE_IMAGE = 'image';
+    const TYPE_VIDEO = 'video';
+    const TYPE_TEXT  = 'text';
+
     /**
      * Initializes a Channel
      *

@@ -37,7 +37,8 @@ class TwitterChannel extends Channel
 
             return array(
                 'source' => $media->media_url . ':large',
-                'thumb'  => $media->media_url . ':small'
+                'thumb'  => $media->media_url . ':small',
+                'type'   => Channel::TYPE_IMAGE
             );
         }
 
@@ -70,6 +71,10 @@ class TwitterChannel extends Channel
                 )
             );
 
+            if (isset($since)) {
+                $options['query']['since_id'] = $since;
+            }
+
             $endpoint = self::ENDPOINT_SEARCH;
         } else {
             $options = array(
@@ -79,11 +84,11 @@ class TwitterChannel extends Channel
                 )
             );
 
-            $endpoint = self::ENDPOINT_SEARCH;
-        }
+            if (isset($since)) {
+                $options['query']['since_id'] = $since;
+            }
 
-        if (isset($since)) {
-            $options['query']['since_id'] = $since;
+            $endpoint = self::ENDPOINT_SEARCH;
         }
 
         try {
@@ -97,6 +102,8 @@ class TwitterChannel extends Channel
     }
 
     protected function parse(stdClass $data, $type) {
+        $return = new stdClass;
+        $return->data = array();
 
         // NOTE: Only handles MEDIA_IMAGES for now.
         // TODO: Handle all the media attachments (not only the first one)
@@ -104,6 +111,13 @@ class TwitterChannel extends Channel
             case Channel::MEDIA_IMAGES:
                 $parseType = '_parseImages';
                 break;
+            case Channel::MEDIA_TEXT:
+            case Channel::MEDIA_ALL:
+                $parseType = NULL;
+                break;
+            case Channel::MEDIA_VIDEOS:
+            case Channel::MEDIA_IMAGES_VIDEOS:
+                return $return;
         }
 
         if (isset($data->statuses)) {
@@ -123,6 +137,7 @@ class TwitterChannel extends Channel
                         $result->created_at       = date('Y-m-d H:i:s', strtotime($entry->created_at));
                         $result->description      = $entry->text;
                         $result->link             = self::SITE_URL . $entry->user->screen_name . '/status/' . $entry->id_str;
+                        $result->type             = Channel::TYPE_TEXT;
 
                         $result->author           = new stdClass;
                         $result->author->id       = $entry->user->id_str;
@@ -139,28 +154,18 @@ class TwitterChannel extends Channel
                 }
             }
 
-            $return            = new stdClass;
             $return->new_since = $data->search_metadata->max_id_str;
             $return->data      = $results;
-
-            return $return;
         } else if (isset($data->id_str)) {
-            $return       = new stdClass;
             $return->data = new stdClass;
 
-            $return->data->id               = $data->id_str;
-            $return->data->created_at       = date('Y-m-d H:i:s', strtotime($data->created_at));
-            $return->data->fullname         = $data->name;
-            $return->data->username         = $data->screen_name;
-            $return->data->followers_count  = $data->followers_count;
-            $return->data->friends_count    = $data->friends_count;
-            $return->data->listed_count     = $data->listed_count;
-            $return->data->favourites_count = $data->favourites_count;
-            $return->data->lang             = $data->lang;
-            $return->data->image            = $data->profile_image_url;
-            $return->data->raw              = $data;
-
-            return $return;
+            $return->data->id       = $data->id_str;
+            $return->data->fullname = $data->name;
+            $return->data->username = $data->screen_name;
+            $return->data->image    = $data->profile_image_url;
+            $return->data->raw      = $data;
         }
+
+        return $return;
     }
 }
