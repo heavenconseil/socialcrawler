@@ -26,7 +26,7 @@ abstract class Channel
      * Searches for content containing a specific hashtag
      *
      * @param   string $query The keyword, or hashtag used in the search
-     * @param   string $type  The type of content that will be kept : MEDIA_IMAGES_VIDEOS | MEDIA_IMAGES | MEDIA_VIDEOS
+     * @param   string $type  The type of content that will be kept : MEDIA_IMAGES_VIDEOS | MEDIA_IMAGES | MEDIA_VIDEOS | MEDIA_TEXT | MEDIA_ALL
      * @param   string $since The limit from which contents will be returned (some APIs might not use this)
      *
      * @return  object The parsed data with the API

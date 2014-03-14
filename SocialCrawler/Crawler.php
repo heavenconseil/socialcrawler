@@ -30,7 +30,7 @@ class Crawler
      *         - id:        The Channel API App ID
      *         - secret:    The Channel API App secret
      *         - token:     The Channel API user Access Token
-     *         - media:     The media type that will be fetched (default: Channel::MEDIA_IMAGES_VIDEOS)
+     *         - media:     The media type that will be fetched (default: Channel::MEDIA_ALL)
      *         - since:     If set, asks the API to find data from the specified timestamp
      * - log: An associative array in the following format
      *     - path:  The destination where the log file will be written (default: SocialCrawler base directory)
@@ -76,7 +76,7 @@ class Crawler
             $timer = microtime(true);
             $output[$channelName] = $channel->fetch(
                 $query,
-                isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_IMAGES_VIDEOS,
+                isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_ALL,
                 isset($this->options['channels'][$channelName]['since']) && strlen($this->options['channels'][$channelName]['since']) > 0 ? $this->options['channels'][$channelName]['since'] : null
             );
 
