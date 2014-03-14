@@ -51,9 +51,9 @@ class Crawler
         $this->channels = array();
         foreach ($options['channels'] as $channel => $config) {
             $className = 'SocialCrawler\\Channel\\' . $channel;
-            if (class_exists($className) && isset($config['id']) && strlen($config['id']) > 0) {
+            if (class_exists($className)) {
                 $this->channels[$channel] = new $className(
-                    $config['id'],
+                    isset($config['id']) && strlen($config['id']) > 0 ? $config['id'] : null,
                     isset($config['secret']) && strlen($config['secret']) > 0 ? $config['secret'] : null,
                     isset($config['token']) && strlen($config['token']) > 0 ? $config['token'] : null
                 );

@@ -93,7 +93,7 @@ class TwitterChannel extends Channel
 
         try {
             $data = static::decodeBody($this->api->get($endpoint, array(), $options)->send());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Crawler::log($this, Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
             return false;
         }
