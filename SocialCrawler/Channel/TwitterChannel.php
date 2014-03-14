@@ -56,12 +56,21 @@ class TwitterChannel extends Channel
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
-                    'screen_name'      => urlencode(substr($query, 5)),
+                    'screen_name'      => substr($query, 5),
                     'include_entities' => 'false'
                 )
             );
 
             $endpoint = self::ENDPOINT_USER;
+        } else if (strpos($query, 'from:') === 0) {
+            $options = array(
+                'query' => array(
+                    'q'           => str_replace('from:', 'from:@', $query),
+                    'result_type' => 'recent'
+                )
+            );
+
+            $endpoint = self::ENDPOINT_SEARCH;
         } else {
             $options = array(
                 'query' => array(
