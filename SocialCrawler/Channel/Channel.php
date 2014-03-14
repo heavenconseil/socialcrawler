@@ -7,9 +7,11 @@ abstract class Channel
     /**
      * Media types supported
      */
-    const MEDIA_IMAGES_VIDEOS   = 'images+videos';
-    const MEDIA_IMAGES          = 'images';
-    const MEDIA_VIDEOS          = 'videos';
+    const MEDIA_IMAGES_VIDEOS = 'images+videos';
+    const MEDIA_IMAGES        = 'images';
+    const MEDIA_VIDEOS        = 'videos';
+    const MEDIA_TEXT          = 'text';
+    const MEDIA_ALL           = 'all';
 
     /**
      * Initializes a Channel
@@ -30,4 +32,23 @@ abstract class Channel
      * @return  object The parsed data with the API
      */
     public function fetch($query, $type, $since = null) { }
+
+    /**
+     * Decode JSON body string to object.
+     *
+     * @param Guzzle\Http\Message\Response $pBody
+     * @return stdClass
+     */
+    protected static function decodeBody(\Guzzle\Http\Message\Response $pResponse) {
+        $data = json_decode($pResponse->getBody(true));
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new Exception('Unable to parse response body into JSON');
+        }
+
+        if ($data === NULL) {
+            $data = new stdClass;
+        }
+
+        return $data;
+    }
 }

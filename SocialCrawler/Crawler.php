@@ -38,11 +38,7 @@ class Crawler
      *
      * @param array $options The configuration options
      */
-    public function __construct($options) {
-        // Setting options
-        if (!is_array($options)) {
-            throw new \Exception('SocialCrawler needs to be initialized with an $options Array.');
-        }
+    public function __construct(array $options) {
         $logPath = isset($options['log']) && isset($options['log']['path']) ? $options['log']['path'] : __DIR__;
         self::$logLevel = isset($options['log']) && isset($options['log']['level']) ? $options['log']['level'] : self::LOG_NORMAL;
         $this->options = $options;

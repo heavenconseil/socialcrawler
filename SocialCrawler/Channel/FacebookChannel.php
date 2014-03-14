@@ -94,7 +94,7 @@ class FacebookChannel extends Channel
         }
 
         try {
-            $data = Guzzle::get(BaseFacebook::$DOMAIN_MAP['graph'] . $entry['object_id'])->json();
+            $data = static::decodeBody(Guzzle::get(BaseFacebook::$DOMAIN_MAP['graph'] . $entry['object_id']));
         } catch (\Exception $e) {
             \SocialCrawler\Crawler::log($this, \SocialCrawler\Crawler::LOG_VERBOSE, 'Entry skipped. ' . str_replace("\n", ' ', $e->getMessage()), array('object_id' => $entry['object_id']));
             return false;

@@ -23,7 +23,7 @@ class InstagramChannel extends Channel
             $options['query']['max_tag_id'] = $since;
         }
         try {
-            $data = $this->api->get('tags/' . $this->sanitize($query) . '/media/recent', array(), $options)->send()->json();
+            $data = static::decodeBody($this->api->get('tags/' . $this->sanitize($query) . '/media/recent', array(), $options)->send());
         } catch (\Exception $e) {
             \SocialCrawler\Crawler::log($this, \SocialCrawler\Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
             return false;
