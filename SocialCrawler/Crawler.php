@@ -92,8 +92,10 @@ class Crawler
                     $pIncludeRaw
                 );
 
-                $output[$channelName]->data      = array_merge($output[$channelName]->data, $result->data);
-                $output[$channelName]->new_since = $result->new_since;
+                if ($result instanceof stdClass and isset($result->data)) {
+                    $output[$channelName]->data      = array_merge($output[$channelName]->data, $result->data);
+                    $output[$channelName]->new_since = $result->new_since;
+                }
             }
 
             if (false !== $output[$channelName]) {

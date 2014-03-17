@@ -114,7 +114,7 @@ class YoutubeChannel extends Channel
                 }
 
                 $result->thumb  = $entry->{'media$group'}->{'media$thumbnail'}[0]->url;
-                $result->source = '';
+                $result->source = 'https://www.youtube.com/embed/' . $result->id . '?rel=0';
                 $result->type   = Channel::TYPE_VIDEO;
 
                 if ($pIncludeRaw) {
