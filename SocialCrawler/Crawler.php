@@ -68,7 +68,7 @@ class Crawler
      *
      * @return object The global data retrieved by the registered Channels
      */
-    public function fetch($query) {
+    public function fetch($query, $pIncludeRaw = false) {
         self::log($this, self::LOG_NORMAL, 'Fetch started', array('channels' => array_keys($this->channels), 'query' => $query));
 
         $output = array();
@@ -77,7 +77,8 @@ class Crawler
             $output[$channelName] = $channel->fetch(
                 $query,
                 isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_ALL,
-                isset($this->options['channels'][$channelName]['since']) && strlen($this->options['channels'][$channelName]['since']) > 0 ? $this->options['channels'][$channelName]['since'] : null
+                isset($this->options['channels'][$channelName]['since']) && strlen($this->options['channels'][$channelName]['since']) > 0 ? $this->options['channels'][$channelName]['since'] : null,
+                $pIncludeRaw
             );
 
             if (false !== $output[$channelName]) {

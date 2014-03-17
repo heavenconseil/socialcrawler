@@ -68,7 +68,7 @@ class InstagramChannel extends Channel
         $this->token     = $applicationToken;
     }
 
-    public function fetch($query, $type, $since = null) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw) {
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -114,10 +114,10 @@ class InstagramChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type);
+        return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw) {
         $return  = new stdClass;
         $return->data = array();
 
@@ -164,9 +164,15 @@ class InstagramChannel extends Channel
                     $result->author->fullname = $entry->user->full_name;
                     $result->author->username = $entry->user->username;
 
+                    $result->thumb            = '';
+                    $result->type             = '';
+                    $result->source           = '';
+
                     $result = (object)array_merge((array)$result, (array)$partialData);
 
-                    $result->raw = $entry;
+                    if ($pIncludeRaw) {
+                        $result->raw = $entry;
+                    }
 
                     $results[] = $result;
                 }
@@ -185,7 +191,7 @@ class InstagramChannel extends Channel
             $return->data->id       = $data->data->id;
             $return->data->fullname = $data->data->full_name;
             $return->data->username = $data->data->username;
-            $return->data->image    = $data->data->profile_picture;
+            $return->data->avatar   = $data->data->profile_picture;
             $return->data->raw      = $data;
         }
 

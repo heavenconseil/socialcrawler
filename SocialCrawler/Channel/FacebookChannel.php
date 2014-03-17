@@ -124,7 +124,7 @@ class FacebookChannel extends Channel
         return array();
     }
 
-    public function fetch($query, $type, $since = null) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw) {
         if (strpos($query, 'user:') === 0) {
             $options = array();
 
@@ -163,10 +163,10 @@ class FacebookChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type);
+        return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw) {
         $return  = new stdClass;
         $return->data = array();
 
@@ -226,10 +226,14 @@ class FacebookChannel extends Channel
                     $result->author->username = $this->_getUsername($entry->from->id);
 
                     $result->type             = Channel::TYPE_TEXT;
+                    $result->thumb            = '';
+                    $result->source           = '';
 
                     $result = (object)array_merge((array)$result, (array)$partialData);
 
-                    //$result->raw = $entry;
+                    if ($pIncludeRaw) {
+                        $result->raw = $entry;
+                    }
 
                     $results[] = $result;
                 }
@@ -244,7 +248,7 @@ class FacebookChannel extends Channel
             $return->data->id       = $data->id;
             $return->data->fullname = $data->name;
             $return->data->username = $data->username;
-            $return->data->image    = self::API_URL . $data->id . '/picture?type=large';
+            $return->data->avatar   = self::API_URL . $data->id . '/picture?type=large';
 
             $return->data->raw = $data;
         }

@@ -53,7 +53,7 @@ class TwitterChannel extends Channel
         )));
     }
 
-    public function fetch($query, $type, $since = null) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw) {
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -98,10 +98,10 @@ class TwitterChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type);
+        return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw) {
         $return = new stdClass;
         $return->data = array();
 
@@ -146,10 +146,14 @@ class TwitterChannel extends Channel
                         $result->author->username = $entry->user->screen_name;
 
                         $result->type             = Channel::TYPE_TEXT;
+                        $result->source           = '';
+                        $result->thumb            = '';
 
                         $result = (object)array_merge((array)$result, (array)$partialData);
 
-                        $result->raw = $entry;
+                        if ($pIncludeRaw) {
+                            $result->raw = $entry;
+                        }
 
                         $results[] = $result;
                     }
@@ -164,7 +168,7 @@ class TwitterChannel extends Channel
             $return->data->id       = $data->id_str;
             $return->data->fullname = $data->name;
             $return->data->username = $data->screen_name;
-            $return->data->image    = $data->profile_image_url;
+            $return->data->avatar   = $data->profile_image_url;
             $return->data->raw      = $data;
         }
 

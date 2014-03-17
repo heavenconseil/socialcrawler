@@ -35,7 +35,7 @@ abstract class Channel
      *
      * @return  object The parsed data with the API
      */
-    public function fetch($query, $type, $since = null) { }
+    public function fetch($query, $type, $since = null, $pIncludeRaw) { }
 
     /**
      * Decode JSON body string to object.
