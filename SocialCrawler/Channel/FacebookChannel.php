@@ -2,7 +2,8 @@
 
 namespace SocialCrawler\Channel;
 
-use Guzzle\Http\Client,
+use \Guzzle\Http\Client,
+    \Guzzle\Http\Exception\ClientErrorResponseException,
     \SocialCrawler\Crawler,
     \stdClass;
 
@@ -40,6 +41,9 @@ class FacebookChannel extends Channel
         try {
             $data = static::decodeBody($this->api->get($pEndpoint, array(), $pOptions)->send());
         } catch (Exception $e) {
+            Crawler::log($this, Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
+            return false;
+        } catch (ClientErrorResponseException $e) {
             Crawler::log($this, Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
             return false;
         }
@@ -84,7 +88,7 @@ class FacebookChannel extends Channel
             $endpoint = sprintf(self::ENDPOINT_USER, $pEntry->object_id);
             $data     = $this->_requestGraph($endpoint, $options);
 
-            if (isset($data) and empty($data->error)) {
+            if (isset($data) and isset($data->images)) {
                 $bestImage = array('id' => 0, 'width' => 0);
                 $nbImages  = count($data->images);
 
@@ -156,12 +160,7 @@ class FacebookChannel extends Channel
             $endpoint = self::ENDPOINT_SEARCH;
         }
 
-        try {
-            $data = $this->_requestGraph($endpoint, $options);
-        } catch (Exception $e) {
-            Crawler::log($this, Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
-            return false;
-        }
+        $data = $this->_requestGraph($endpoint, $options);
 
         return $this->parse($data, $type, $pIncludeRaw);
     }

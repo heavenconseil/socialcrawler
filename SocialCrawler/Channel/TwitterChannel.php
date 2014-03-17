@@ -3,6 +3,7 @@
 namespace SocialCrawler\Channel;
 
 use Guzzle\Http\Client,
+    \Guzzle\Http\Exception\ClientErrorResponseException,
     Guzzle\Plugin\Oauth\OauthPlugin,
     \SocialCrawler\Crawler,
     \Exception,
@@ -94,6 +95,9 @@ class TwitterChannel extends Channel
         try {
             $data = static::decodeBody($this->api->get($endpoint, array(), $options)->send());
         } catch (Exception $e) {
+            Crawler::log($this, Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
+            return false;
+        } catch (ClientErrorResponseException $e) {
             Crawler::log($this, Crawler::LOG_ERROR, str_replace("\n", ' ', $e->getMessage()));
             return false;
         }
