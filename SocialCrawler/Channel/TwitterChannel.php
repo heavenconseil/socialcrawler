@@ -145,6 +145,8 @@ class TwitterChannel extends Channel
                         $result->author->fullname = $entry->user->name;
                         $result->author->username = $entry->user->screen_name;
 
+                        $result->type             = Channel::TYPE_TEXT;
+
                         $result = (object)array_merge((array)$result, (array)$partialData);
 
                         $result->raw = $entry;
