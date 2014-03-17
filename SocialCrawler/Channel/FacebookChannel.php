@@ -250,7 +250,9 @@ class FacebookChannel extends Channel
             $return->data->username = $data->username;
             $return->data->avatar   = self::API_URL . $data->id . '/picture?type=large';
 
-            $return->data->raw = $data;
+            if ($pIncludeRaw) {
+                $return->data->raw = $data;
+            }
         }
 
         return $return;

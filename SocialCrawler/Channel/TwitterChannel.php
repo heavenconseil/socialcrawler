@@ -145,7 +145,6 @@ class TwitterChannel extends Channel
                         $result->author->fullname = $entry->user->name;
                         $result->author->username = $entry->user->screen_name;
 
-                        $result->type             = Channel::TYPE_TEXT;
                         $result->source           = '';
                         $result->thumb            = '';
 
@@ -168,8 +167,16 @@ class TwitterChannel extends Channel
             $return->data->id       = $data->id_str;
             $return->data->fullname = $data->name;
             $return->data->username = $data->screen_name;
-            $return->data->avatar   = $data->profile_image_url;
-            $return->data->raw      = $data;
+
+            if (isset($data->profile_image_url)) {
+                $return->data->avatar = $data->profile_image_url;
+            } else {
+                $return->data->avatar = '';
+            }
+
+            if ($pIncludeRaw) {
+                $return->data->raw = $data;
+            }
         }
 
         return $return;

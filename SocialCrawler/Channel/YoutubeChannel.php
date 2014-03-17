@@ -120,7 +120,7 @@ class YoutubeChannel extends Channel
                 $results[] = $result;
             }
 
-            $return->new_since = 0;
+            $return->new_since = NULL;
 
             $return->data = $results;
         } else if (isset($data->entry->id)) {
@@ -133,7 +133,10 @@ class YoutubeChannel extends Channel
             $return->data->fullname = $data->entry->title->{'$t'};
             $return->data->username = $data->entry->{'yt$username'}->{'$t'};
             $return->data->avatar   = $data->entry->{'media$thumbnail'}->url;
-            $return->data->raw      = $data;
+
+            if ($pIncludeRaw) {
+                $return->data->raw = $data;
+            }
         }
 
         return $return;

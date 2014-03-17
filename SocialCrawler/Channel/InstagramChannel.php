@@ -191,8 +191,16 @@ class InstagramChannel extends Channel
             $return->data->id       = $data->data->id;
             $return->data->fullname = $data->data->full_name;
             $return->data->username = $data->data->username;
-            $return->data->avatar   = $data->data->profile_picture;
-            $return->data->raw      = $data;
+
+            if (isset($data->data->profile_picture)) {
+                $return->data->avatar = $data->data->profile_picture;
+            } else {
+                $return->data->avatar = '';
+            }
+
+            if ($pIncludeRaw) {
+                $return->data->raw  = $data;
+            }
         }
 
         return $return;
