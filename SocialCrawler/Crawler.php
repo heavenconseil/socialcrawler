@@ -2,8 +2,9 @@
 
 namespace SocialCrawler;
 
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Monolog\Logger,
+    Monolog\Handler\StreamHandler,
+    \stdClass;
 
 class Crawler
 {
@@ -69,17 +70,31 @@ class Crawler
      * @return object The global data retrieved by the registered Channels
      */
     public function fetch($query, $pIncludeRaw = false) {
-        self::log($this, self::LOG_NORMAL, 'Fetch started', array('channels' => array_keys($this->channels), 'query' => $query));
+        if (! is_array($query)) {
+            $query = array($query);
+        }
+
+        self::log($this, self::LOG_NORMAL, 'Fetch started', array('channels' => array_keys($this->channels), 'query' => implode(', ', $query)));
 
         $output = array();
         foreach ($this->channels as $channelName => $channel) {
             $timer = microtime(true);
-            $output[$channelName] = $channel->fetch(
-                $query,
-                isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_ALL,
-                isset($this->options['channels'][$channelName]['since']) && strlen($this->options['channels'][$channelName]['since']) > 0 ? $this->options['channels'][$channelName]['since'] : null,
-                $pIncludeRaw
-            );
+
+            $output[$channelName]            = new stdClass;
+            $output[$channelName]->data      = array();
+            $output[$channelName]->new_since = NULL;
+
+            foreach ($query as $tag) {
+                $result = $channel->fetch(
+                    $tag,
+                    isset($this->options['channels'][$channelName]['media']) ? $this->options['channels'][$channelName]['media'] : Channel\Channel::MEDIA_ALL,
+                    isset($this->options['channels'][$channelName]['since']) && strlen($this->options['channels'][$channelName]['since']) > 0 ? $this->options['channels'][$channelName]['since'] : null,
+                    $pIncludeRaw
+                );
+
+                $output[$channelName]->data      = array_merge($output[$channelName]->data, $result->data);
+                $output[$channelName]->new_since = $result->new_since;
+            }
 
             if (false !== $output[$channelName]) {
                 $count = count($output[$channelName]->data);

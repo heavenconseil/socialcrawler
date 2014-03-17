@@ -189,7 +189,7 @@ class FacebookChannel extends Channel
 
         if (isset($data->data) and is_array($data->data)) {
             $results = array();
-            $minId   = 0;
+            $minId   = NULL;
 
             foreach ($data->data as $entry) {
                 if (isset($parseType)) {
