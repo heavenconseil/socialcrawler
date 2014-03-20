@@ -234,6 +234,10 @@ class FacebookChannel extends Channel
                         $result->raw = $entry;
                     }
 
+                    if ($result->type === Channel::TYPE_TEXT and ! $result->description) {
+                        continue;
+                    }
+
                     $results[] = $result;
                 }
             }

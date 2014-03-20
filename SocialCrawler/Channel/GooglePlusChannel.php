@@ -181,6 +181,10 @@ class GooglePlusChannel extends Channel
                     $urlArr                   = explode('/', $url);
                     $result->author->username = end($urlArr);
 
+                    if (ctype_digit($result->author->username)) {
+                        $result->author->username = '';
+                    }
+
                     $result->source           = '';
                     $result->thumb            = '';
 
@@ -188,6 +192,10 @@ class GooglePlusChannel extends Channel
 
                     if ($pIncludeRaw) {
                         $result->raw = $entry;
+                    }
+
+                    if ($result->type === Channel::TYPE_TEXT and ! $result->description) {
+                        continue;
                     }
 
                     $results[] = $result;
