@@ -1,5 +1,4 @@
 <?php
-
 namespace SocialCrawler\Channel;
 
 abstract class Channel
@@ -7,9 +6,18 @@ abstract class Channel
     /**
      * Media types supported
      */
-    const MEDIA_IMAGES_VIDEOS   = 'images+videos';
-    const MEDIA_IMAGES          = 'images';
-    const MEDIA_VIDEOS          = 'videos';
+    const MEDIA_IMAGES_VIDEOS = 'images+videos';
+    const MEDIA_IMAGES        = 'images';
+    const MEDIA_VIDEOS        = 'videos';
+    const MEDIA_TEXT          = 'text';
+    const MEDIA_ALL           = 'all';
+
+    /**
+     * Single types
+     */
+    const TYPE_IMAGE = 'image';
+    const TYPE_VIDEO = 'video';
+    const TYPE_TEXT  = 'text';
 
     /**
      * Initializes a Channel
@@ -23,11 +31,32 @@ abstract class Channel
     /**
      * Searches for content containing a specific hashtag
      *
-     * @param   string $query The keyword, or hashtag used in the search
-     * @param   string $type  The type of content that will be kept : MEDIA_IMAGES_VIDEOS | MEDIA_IMAGES | MEDIA_VIDEOS
-     * @param   string $since The limit from which contents will be returned (some APIs might not use this)
+     * @param   string $query       The keyword, or hashtag used in the search
+     * @param   string $type        The type of content that will be kept : MEDIA_IMAGES_VIDEOS | MEDIA_IMAGES | MEDIA_VIDEOS | MEDIA_TEXT | MEDIA_ALL
+     * @param   string $since       The limit from which contents will be returned (some APIs might not use this)
+     * @param   bool   $pIncludeRaw Include Raw data in response
      *
      * @return  object The parsed data with the API
      */
-    public function fetch($query, $type, $since = null) { }
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false) { }
+
+    /**
+     * Decode JSON body string to object.
+     *
+     * @param Guzzle\Http\Message\Response $pBody
+     * @return stdClass
+     */
+    protected static function decodeBody(\Guzzle\Http\Message\Response $pResponse)
+    {
+        $data = json_decode($pResponse->getBody(true));
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new Exception('Unable to parse response body into JSON');
+        }
+
+        if ($data === NULL) {
+            $data = new stdClass;
+        }
+
+        return $data;
+    }
 }
