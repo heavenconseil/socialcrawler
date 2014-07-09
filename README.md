@@ -20,12 +20,6 @@ curl -sS https://getcomposer.org/installer | php
 
 Then add SocialCrawler as a dependency in your `composer.json` file.
 ```javascript
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "git@github.com:heavenconseil/socialcrawler.git"
-    }
-],
 "require": {
     "heavenconseil/socialcrawler": "dev-master"
 }
@@ -74,7 +68,7 @@ $crawler = new Crawler(array(
 $data = $crawler->fetch('#hashtag'); // Fetch a specific hashtag
 $data = $crawler->fetch(array('#hashtag1', '#hashtag2')); // Fetch multiple hashtags
 $data = $crawler->fetch('from:userId'); // Getch content from a specific user
-$data = $crawler->fetch('user:userId'); // Fetch user informations
+$data = $crawler->fetch('user:userId', true); // Fetch user informations with raw data
 ```
 
 SocialCrawler can be initialized with an Array of `channels`, each item containing at least an `id` property and identified by the name of the class that will handle the operations.
@@ -115,7 +109,7 @@ You can easily support more services (say, [Tumblr](http://www.tumblr.com/docs/e
 
 ```php
  __construct($applicationId, $applicationSecret = null, $applicationToken = null)
- fetch($query, $type, $since = null)
+ fetch($query, $type, $since = null, $pIncludeRaw = false)
 ```
 
 You can benefit from the [Guzzle](https://github.com/guzzle/guzzle) HTTP framework for your Channel as it's already used by SocialCrawler.

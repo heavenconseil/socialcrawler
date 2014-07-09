@@ -1,5 +1,4 @@
 <?php
-
 namespace SocialCrawler\Channel;
 
 use Guzzle\Http\Client,
@@ -23,12 +22,14 @@ class InstagramChannel extends Channel
     private $client_id;
     private $token;
 
-    public static function sanitize($pData) {
+    public static function sanitize($pData)
+    {
         return preg_replace('/[^\w-]/', '', $pData);
     }
 
-    private static function _parseAll(stdClass $pEntry) {
-        $data = array();
+    private static function _parseAll(stdClass $pEntry)
+    {
+        $data   = array();
 
         $images = self::_parseImages($pEntry);
         $data   = array_merge($data, $images);
@@ -39,7 +40,8 @@ class InstagramChannel extends Channel
         return $data;
     }
 
-    private static function _parseImages(stdClass $pEntry) {
+    private static function _parseImages(stdClass $pEntry)
+    {
         if ($pEntry->type === self::TYPE_IMAGE) {
             return array(
                 'source' => $pEntry->images->standard_resolution->url,
@@ -51,7 +53,8 @@ class InstagramChannel extends Channel
         return array();
     }
 
-    private static function _parseVideos(stdClass $pEntry) {
+    private static function _parseVideos(stdClass $pEntry)
+    {
         if ($pEntry->type === self::TYPE_VIDEO) {
             return array(
                 'source' => $pEntry->videos->standard_resolution->url,
@@ -63,13 +66,15 @@ class InstagramChannel extends Channel
         return array();
     }
 
-    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null) {
+    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null)
+    {
         $this->api       = new Client(self::API_URL);
         $this->client_id = $applicationId;
         $this->token     = $applicationToken;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    {
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -121,7 +126,8 @@ class InstagramChannel extends Channel
         return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw = false)
+    {
         $return  = new stdClass;
         $return->data = array();
 
@@ -182,8 +188,8 @@ class InstagramChannel extends Channel
                 }
             }
 
-            if (isset($data->pagination->min_tag_id)) {
-                $return->new_since = $data->pagination->min_tag_id;
+            if (isset($data->pagination->next_max_tag_id)) {
+                $return->new_since = $data->pagination->next_max_tag_id;
             } else {
                 $return->new_since = $minId;
             }

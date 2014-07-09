@@ -24,8 +24,9 @@ class GooglePlusChannel extends Channel
     private $api;
     private $api_key;
 
-    private static function _parseAll(stdClass $pEntry) {
-        $data = array();
+    private static function _parseAll(stdClass $pEntry)
+    {
+        $data   = array();
 
         $images = self::_parseImages($pEntry);
         $data   = array_merge($data, $images);
@@ -36,11 +37,13 @@ class GooglePlusChannel extends Channel
         return $data;
     }
 
-    private static function _parseImagesVideos(stdClass $pEntry) {
+    private static function _parseImagesVideos(stdClass $pEntry)
+    {
         return self::_parseAll($pEntry);
     }
 
-    private static function _parseImages(stdClass $pEntry) {
+    private static function _parseImages(stdClass $pEntry)
+    {
         if (isset($pEntry->object->attachments[0])
             and isset($pEntry->object->attachments[0]->objectType)
             and $pEntry->object->attachments[0]->objectType == self::TYPE_IMAGE
@@ -56,7 +59,8 @@ class GooglePlusChannel extends Channel
         return array();
     }
 
-    private static function _parseVideos(stdClass $pEntry) {
+    private static function _parseVideos(stdClass $pEntry)
+    {
         if (isset($pEntry->object->attachments[0])
             and isset($pEntry->object->attachments[0]->objectType)
             and $pEntry->object->attachments[0]->objectType == self::TYPE_VIDEO
@@ -72,12 +76,14 @@ class GooglePlusChannel extends Channel
         return array();
     }
 
-    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null) {
-        $this->api = new Client(self::API_URL);
+    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null)
+    {
+        $this->api     = new Client(self::API_URL);
         $this->api_key = $applicationId;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    {
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -113,7 +119,8 @@ class GooglePlusChannel extends Channel
         return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw = false)
+    {
         $return = new stdClass;
         $return->data = array();
 
@@ -139,9 +146,6 @@ class GooglePlusChannel extends Channel
             $results = array();
 
             foreach ($data->items as $entry) {
-                //var_dump($entry);
-                //exit;
-
                 if (isset($parseType)) {
                     if ($parseType === '_parseText'
                         and (! isset($entry->object->content)
@@ -185,8 +189,8 @@ class GooglePlusChannel extends Channel
                         $result->author->username = '';
                     }
 
-                    $result->source           = '';
-                    $result->thumb            = '';
+                    $result->source = '';
+                    $result->thumb  = '';
 
                     $result = (object)array_merge((array)$result, (array)$partialData);
 

@@ -1,5 +1,4 @@
 <?php
-
 namespace SocialCrawler\Channel;
 
 use \Guzzle\Http\Client,
@@ -23,7 +22,8 @@ class FacebookChannel extends Channel
     private $api;
     private $token;
 
-    private static function getThumb(stdClass $pEntry) {
+    private static function getThumb(stdClass $pEntry)
+    {
         if (strpos($pEntry->picture, 'safe_image.php') === false) {
             return $pEntry->picture;
         }
@@ -32,12 +32,14 @@ class FacebookChannel extends Channel
         return urldecode($matches[1]);
     }
 
-    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken) {
+    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken)
+    {
         $this->api   = new Client(self::API_URL);
         $this->token = $applicationToken;
     }
 
-    private function _requestGraph($pEndpoint, array $pOptions) {
+    private function _requestGraph($pEndpoint, array $pOptions)
+    {
         try {
             $data = static::decodeBody($this->api->get($pEndpoint, array(), $pOptions)->send());
         } catch (Exception $e) {
@@ -51,7 +53,8 @@ class FacebookChannel extends Channel
         return $data;
     }
 
-    private function _getUsername($pId) {
+    private function _getUsername($pId)
+    {
         $options  = array();
         $endpoint = sprintf(self::ENDPOINT_USER, $pId);
         $data     = $this->_requestGraph($endpoint, $options);
@@ -62,8 +65,9 @@ class FacebookChannel extends Channel
         return '';
     }
 
-    private function _parseAll(stdClass $pEntry) {
-        $data = array();
+    private function _parseAll(stdClass $pEntry)
+    {
+        $data   = array();
 
         $images = $this->_parseImages($pEntry);
         $data   = array_merge($data, $images);
@@ -74,11 +78,13 @@ class FacebookChannel extends Channel
         return $data;
     }
 
-    private function _parseImagesVideos(stdClass $pEntry) {
+    private function _parseImagesVideos(stdClass $pEntry)
+    {
         return $this->_parseAll($pEntry);
     }
 
-    private function _parseImages(stdClass $pEntry) {
+    private function _parseImages(stdClass $pEntry)
+    {
         if ($pEntry->type === self::TYPE_IMAGE
             and isset($pEntry->object_id)
             and ! empty($pEntry->object_id)
@@ -111,7 +117,8 @@ class FacebookChannel extends Channel
         return array();
     }
 
-    private function _parseVideos(stdClass $pEntry) {
+    private function _parseVideos(stdClass $pEntry)
+    {
         if ($pEntry->type === self::TYPE_VIDEO
             and isset($pEntry->picture)
             and ! empty($pEntry->picture)
@@ -128,10 +135,10 @@ class FacebookChannel extends Channel
         return array();
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    {
         if (strpos($query, 'user:') === 0) {
-            $options = array();
-
+            $options  = array();
             $endpoint = sprintf(self::ENDPOINT_USER, substr($query, 5));
         } else if (strpos($query, 'from:') === 0) {
             $options = array(
@@ -161,11 +168,11 @@ class FacebookChannel extends Channel
         }
 
         $data = $this->_requestGraph($endpoint, $options);
-
         return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw = false)
+    {
         $return  = new stdClass;
         $return->data = array();
 
@@ -243,8 +250,7 @@ class FacebookChannel extends Channel
             }
 
             $return->new_since = $minId;
-
-            $return->data = $results;
+            $return->data      = $results;
         } else if (isset($data->id)) {
             $return->data = new stdClass;
 

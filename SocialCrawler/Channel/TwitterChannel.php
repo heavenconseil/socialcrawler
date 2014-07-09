@@ -1,5 +1,4 @@
 <?php
-
 namespace SocialCrawler\Channel;
 
 use Guzzle\Http\Client,
@@ -21,7 +20,8 @@ class TwitterChannel extends Channel
 
     private $api;
 
-    private static function _parseAll(stdClass $pEntry) {
+    private static function _parseAll(stdClass $pEntry)
+    {
         $data = array();
 
         $images = self::_parseImages($pEntry);
@@ -30,7 +30,8 @@ class TwitterChannel extends Channel
         return $data;
     }
 
-    private static function _parseImages(stdClass $pEntry) {
+    private static function _parseImages(stdClass $pEntry)
+    {
         if (isset($pEntry->entities->media)
             and count($pEntry->entities->media) > 0
             and $pEntry->entities->media[0]->type === self::TYPE_PHOTO) {
@@ -46,15 +47,17 @@ class TwitterChannel extends Channel
         return array();
     }
 
-    public function __construct($applicationId, $applicationSecret, $applicationToken = null) {
+    public function __construct($applicationId, $applicationSecret, $applicationToken = null)
+    {
         $this->api = new Client(self::API_URL);
         $this->api->addSubscriber(new OauthPlugin(array(
-            'consumer_key'      => $applicationId,
-            'consumer_secret'   => $applicationSecret,
+            'consumer_key'    => $applicationId,
+            'consumer_secret' => $applicationSecret,
         )));
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    {
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -81,7 +84,8 @@ class TwitterChannel extends Channel
             $options = array(
                 'query' => array(
                     'q'           => urlencode($query),
-                    'result_type' => 'recent'
+                    'result_type' => 'recent',
+                    'count'       => 100
                 )
             );
 
@@ -102,15 +106,17 @@ class TwitterChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type, $pIncludeRaw);
+        return $this->parse($data, $type, $pIncludeRaw = false);
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw)
+    {
         $return = new stdClass;
         $return->data = array();
 
         // NOTE: Only handles MEDIA_IMAGES for now.
         // TODO: Handle all the media attachments (not only the first one)
+
         switch ($type) {
             case Channel::MEDIA_IMAGES:
                 $parseType = '_parseImages';

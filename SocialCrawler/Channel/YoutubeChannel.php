@@ -23,11 +23,13 @@ class YoutubeChannel extends Channel
 
     private $api;
 
-    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken = null) {
+    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken = null)
+    {
         $this->api = new Client(self::API_URL);
     }
 
-    private function _getAuthor(stdClass $pEntry) {
+    private function _getAuthor(stdClass $pEntry)
+    {
         $options = array(
             'query' => array(
                 'alt' => 'json'
@@ -46,7 +48,8 @@ class YoutubeChannel extends Channel
         return $data;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw) {
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    {
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -82,7 +85,8 @@ class YoutubeChannel extends Channel
         return $this->parse($data, $type, $pIncludeRaw);
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw) {
+    protected function parse(stdClass $data, $type, $pIncludeRaw = false)
+    {
         $return  = new stdClass;
         $return->data = array();
 
