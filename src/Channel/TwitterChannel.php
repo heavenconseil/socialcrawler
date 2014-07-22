@@ -106,7 +106,7 @@ class TwitterChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type, $pIncludeRaw = false);
+        return $this->parse($data, $type, $pIncludeRaw);
     }
 
     protected function parse(stdClass $data, $type, $pIncludeRaw)
