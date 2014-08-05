@@ -107,7 +107,7 @@ class InstagramChannel extends Channel
             );
 
             if (isset($since)) {
-                $options['query']['max_tag_id'] = $since;
+                $options['query']['min_tag_id'] = $since;
             }
 
             $endpoint = sprintf(self::ENDPOINT_TAG, self::sanitize($query));
@@ -148,7 +148,6 @@ class InstagramChannel extends Channel
 
         if (isset($data->data) and is_array($data->data)) {
             $results = array();
-            $minId   = NULL;
 
             foreach ($data->data as $entry) {
                 if (isset($parseType)) {
@@ -158,10 +157,6 @@ class InstagramChannel extends Channel
                 }
 
                 if (! isset($parseType) or ! empty($partialData)) {
-                    if (! $minId) {
-                        $minId = $entry->id;
-                    }
-
                     $result                   = new stdClass;
                     $result->id               = $entry->id;
                     $result->created_at       = date('Y-m-d H:i:s', $entry->created_time);
@@ -188,10 +183,10 @@ class InstagramChannel extends Channel
                 }
             }
 
-            if (isset($data->pagination->next_max_tag_id)) {
-                $return->new_since = $data->pagination->next_max_tag_id;
+            if (isset($data->pagination->next_min_id)) {
+                $return->new_since = $data->pagination->next_min_id;
             } else {
-                $return->new_since = $minId;
+                $return->new_since = NULL;
             }
 
             $return->data = $results;
