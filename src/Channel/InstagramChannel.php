@@ -113,6 +113,8 @@ class InstagramChannel extends Channel
             $endpoint = sprintf(self::ENDPOINT_TAG, self::sanitize($query));
         }
 
+        $endpoint = trim($endpoint);
+
         try {
             $data = static::decodeBody($this->api->get($endpoint, array(), $options)->send());
         } catch (Exception $e) {
