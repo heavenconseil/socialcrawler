@@ -1,42 +1,45 @@
 <?php
-/**
- * @todo Upgrade to API V3, implement search
- */
-
 namespace SocialCrawler\Channel;
 
 use Guzzle\Http\Client,
     \Guzzle\Http\Exception\ClientErrorResponseException,
     \SocialCrawler\Crawler,
     \Exception,
-    \stdClass;
+    \stdClass,
+    \DateTime;
 
 class YoutubeChannel extends Channel
 {
-    const API_URL             = 'https://gdata.youtube.com/feeds/api/';
+    const SITE_URL            = 'https://www.youtube.com/watch';
+    const API_URL             = 'https://www.googleapis.com/youtube/v3/';
 
-    const ENDPOINT_USER       = 'users/%s';
-    //const ENDPOINT_VIDEO      = 'videos/%s?v=2&alt=json';
-    const ENDPOINT_USER_VIDEO = 'users/%s/uploads';
+    const RESULTS_PER_PAGE    = 50; // max. 50
+
+    const ENDPOINT_SEARCH     = 'search';
+    const ENDPOINT_USER       = 'channels';
+    const ENDPOINT_SEARCH_USER = 'playlistItems';
 
     const TYPE_VIDEO          = 'video';
 
     private $api;
 
-    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken = null)
+    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null, $params = null)
     {
         $this->api = new Client(self::API_URL);
+        $this->api_key = $applicationId;
     }
 
-    private function _getAuthor(stdClass $pEntry)
+    private function _getAuthor($authorId)
     {
         $options = array(
             'query' => array(
-                'alt' => 'json'
+                'part' => 'id,snippet,contentDetails',
+                'key'  => $this->api_key,
+                'id'   => $authorId
             )
         );
 
-        $endpoint = str_replace(self::API_URL, '', $pEntry->author[0]->uri->{'$t'});
+        $endpoint = self::ENDPOINT_USER;
 
         try {
             $data = static::decodeBody($this->api->get($endpoint, array(), $options)->send());
@@ -48,28 +51,41 @@ class YoutubeChannel extends Channel
         return $data;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false, $nextPageToken = null)
     {
+        $since = $this->decodeSince($since, $query, true);
+
+        $options = array(
+            'query' => array(
+                'part' => 'id,snippet',
+                'key' => $this->api_key,
+                'maxResults' => self::RESULTS_PER_PAGE
+            )
+        );
+        if (isset($nextPageToken)) {
+            $options['query']['pageToken'] = $nextPageToken;
+        }
+
         if (strpos($query, 'user:') === 0) {
-            $options = array(
-                'query' => array(
-                    'alt' => 'json'
-                )
-            );
-
-            $endpoint = sprintf(self::ENDPOINT_USER, substr($query, 5));
+            $authorId = substr($query, 5);
+            $options['query']['id'] = $authorId;
+            $endpoint = self::ENDPOINT_USER;
         } else if (strpos($query, 'from:') === 0) {
-            $options = array(
-                'query' => array(
-                    'alt' => 'json'
-                )
-            );
+            $authorId = substr($query, 5);
+            $author = $this->_getAuthor($authorId);
+            if (isset($author->items[0])) {
+                $author = $author->items[0];
+                $options['query']['playlistId'] = $author->contentDetails->relatedPlaylists->uploads;
+            }
 
-            $endpoint = sprintf(self::ENDPOINT_USER_VIDEO, substr($query, 5));
+            $endpoint = self::ENDPOINT_SEARCH_USER;
         } else {
-            $return       = new stdClass;
-            $return->data = array();
-            return $return;
+            $options['query']['q'] = '#' . $query;
+            $options['query']['order'] = 'relevance';   // order=date does not work with hashtags
+            if (isset($since)) {
+                $options['query']['publishedAfter'] = $since->format(self::ISO_8601_FORMAT);
+            }
+            $endpoint = self::ENDPOINT_SEARCH;
         }
 
         $endpoint = trim($endpoint);
@@ -84,43 +100,61 @@ class YoutubeChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type, $pIncludeRaw);
+        $return = $this->parse($data, $type, $pIncludeRaw, $since);
+
+        if (isset($return->original_data_count) && ($return->original_data_count >= self::RESULTS_PER_PAGE) && isset($data->nextPageToken)) {
+            $newData = $this->fetch($query, $type, $since, $pIncludeRaw, $data->nextPageToken);
+            $return = $this->handleNewPage($return, $newData);
+        }
+
+        if (!isset($nextPageToken) && isset($return->new_since)) {
+            $return->new_since = $return->new_since->format(self::ISO_8601_FORMAT);
+        }
+
+        return $return;
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw = false)
+    protected function parse(stdClass $data, $type, $pIncludeRaw = false, $since = null)
     {
         $return  = new stdClass;
         $return->data = array();
 
-        if (isset($data->feed) and isset($data->feed->entry) and is_array($data->feed->entry)) {
+        if (isset($data->kind) && (in_array($data->kind, ['youtube#searchListResponse', 'youtube#playlistItemListResponse'])) && isset($data->items) and is_array($data->items)) {
             $results = array();
 
-            foreach ($data->feed->entry as $entry) {
+            foreach ($data->items as $entry) {
                 $result              = new stdClass;
 
-                $id                  = $entry->id->{'$t'};
-                $idArr               = explode('/', $id);
-                $result->id          = end($idArr);
-
-                $result->created_at  = date('Y-m-d H:i:s', strtotime($entry->published->{'$t'}));
-                $result->description = (isset($entry->content->{'$t'})) ? $entry->content->{'$t'} : '';
-                $result->link        = $entry->link[0]->href;
-
-                $author = $this->_getAuthor($entry);
-                if (isset($author->entry->id)) {
-                    $result->author           = new stdClass;
-
-                    $id                       = $author->entry->id->{'$t'};
-                    $idArr                    = explode('/', $id);
-                    $result->author->id       = end($idArr);
-
-                    $result->author->avatar   = $author->entry->{'media$thumbnail'}->url;
-                    $result->author->fullname = $author->entry->title->{'$t'};
-                    $result->author->username = $author->entry->{'yt$username'}->{'$t'};
+                $id = null;
+                if (isset($entry->id->videoId)) {
+                    $id = $entry->id->videoId;
+                } else if (isset($entry->id->channelId)) {
+                    $id = $entry->id->channelId;
                 }
 
-                $result->thumb  = $entry->{'media$group'}->{'media$thumbnail'}[0]->url;
-                $result->source = 'https://www.youtube.com/embed/' . $result->id . '?rel=0';
+                $result->id = $id;
+                $snippet = $entry->snippet;
+
+                $result->created_at  = date('Y-m-d H:i:s', strtotime($snippet->publishedAt));
+                $result->created_at_orig  = $snippet->publishedAt;
+                $result->description = isset($snippet->description) ? $snippet->description : '';
+                $result->link        = $id !== null ? (self::SITE_URL . '?v=' . $id) : '';
+
+                $author = $this->_getAuthor($entry->snippet->channelId);
+                if (isset($author->items[0])) {
+                    $author = $author->items[0];
+                    $snippet = $author->snippet;
+                    $result->author           = new stdClass;
+
+                    $result->author->id       = $author->id;
+
+                    $result->author->avatar   = isset($snippet->thumbnails->high->url) ? $snippet->thumbnails->high->url : '';
+                    $result->author->fullname = $snippet->title;
+                    $result->author->username = $result->author->fullname;
+                }
+
+                $result->thumb  = $snippet->thumbnails->default->url;
+                $result->source  = $snippet->thumbnails->high->url;
                 $result->type   = Channel::TYPE_VIDEO;
 
                 if ($pIncludeRaw) {
@@ -130,22 +164,24 @@ class YoutubeChannel extends Channel
                 $results[] = $result;
             }
 
-            $return->new_since = NULL;
-
             $return->data = $results;
-        } else if (isset($data->entry->id)) {
+
+            $return = $this->removeOldEntries($return, $since);
+
+        } else if (isset($data->kind) && ($data->kind === 'youtube#channelListResponse')) {
             $return->data = new stdClass;
 
-            $id                     = $data->entry->id->{'$t'};
-            $idArr                  = explode('/', $id);
-            $return->data->id       = end($idArr);
+            foreach ($data->items as $entry) {
+                $snippet = $entry->snippet;
+                $return->data->id       = $entry->id;
 
-            $return->data->fullname = $data->entry->title->{'$t'};
-            $return->data->username = $data->entry->{'yt$username'}->{'$t'};
-            $return->data->avatar   = $data->entry->{'media$thumbnail'}->url;
+                $return->data->fullname = $snippet->title;
+                $return->data->username = $return->data->fullname;
+                $return->data->avatar   = isset($snippet->thumbnails->high->url) ? $snippet->thumbnails->high->url : '';
 
-            if ($pIncludeRaw) {
-                $return->data->raw = $data;
+                if ($pIncludeRaw) {
+                    $return->data->raw = $data;
+                }
             }
         }
 
