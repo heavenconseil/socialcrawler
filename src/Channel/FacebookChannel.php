@@ -32,7 +32,7 @@ class FacebookChannel extends Channel
         return urldecode($matches[1]);
     }
 
-    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken)
+    public function __construct($applicationId = null, $applicationSecret = null, $applicationToken = null, $params = null)
     {
         $this->api   = new Client(self::API_URL);
         $this->token = $applicationToken;

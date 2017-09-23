@@ -3,7 +3,8 @@ namespace SocialCrawler;
 
 use Monolog\Logger,
     Monolog\Handler\StreamHandler,
-    \stdClass;
+    \stdClass,
+    \DateTime;
 
 class Crawler
 {
@@ -56,7 +57,8 @@ class Crawler
                 $this->channels[$channel] = new $className(
                     (isset($config['id']) and strlen($config['id']) > 0) ? $config['id'] : null,
                     (isset($config['secret']) and strlen($config['secret'])) > 0 ? $config['secret'] : null,
-                    (isset($config['token']) and strlen($config['token'])) > 0 ? $config['token'] : null
+                    (isset($config['token']) and strlen($config['token'])) > 0 ? $config['token'] : null,
+                    (isset($config['params']) ? $config['params'] : null)
                 );
             }
         }
@@ -92,7 +94,7 @@ class Crawler
 
             $output[$channelName]            = new stdClass;
             $output[$channelName]->data      = array();
-            $output[$channelName]->new_since = NULL;
+            $output[$channelName]->new_since = array();
 
             foreach ($query as $tag) {
                 $result = $channel->fetch(
@@ -108,12 +110,11 @@ class Crawler
                     $output[$channelName]->data = $result->data;
                 }
 
-                if (isset($result->new_since)) {
-                    $output[$channelName]->new_since = $result->new_since;
-                }
+                $output[$channelName]->new_since[$tag] = isset($result->new_since) ? $result->new_since : null;
             }
 
             if (false !== $output[$channelName]) {
+                $output[$channelName]->data = $this->removeDuplicates($output[$channelName]->data);
                 $count = count($output[$channelName]->data);
                 $timer = round(microtime(true) - $timer, 3) * 1000;
                 self::log(
@@ -127,8 +128,37 @@ class Crawler
             }
         }
 
+        // Convert all new_since to json with channel name keys
+        $output = array_map(function($channelOutput) {
+            if (isset($channelOutput->new_since)) {
+                $channelOutput->new_since = json_encode($channelOutput->new_since);
+            }
+            return $channelOutput;
+        }, $output);
+
         self::log($this, self::LOG_NORMAL, 'Fetch finished');
         return $output;
+    }
+
+
+    /**
+     * Removes entries with same id (for multiple hashtag fetch)
+     *
+     * @param array     $data Data property of the fetch result
+     * @return array    Data without duplicates
+     */
+    public static function removeDuplicates($data)
+    {
+        return array_reduce($data, function($aggregateData, $currentDataItem) {
+            $previousIds = array_reduce($aggregateData, function($a, $d) {
+                $a[] = $d->id;
+                return $a;
+            }, []);
+            if (!in_array($currentDataItem->id, $previousIds)) {
+                $aggregateData[] = $currentDataItem;
+            }
+            return $aggregateData;
+        }, []);
     }
 
     /**

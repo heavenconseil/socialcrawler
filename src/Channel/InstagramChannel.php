@@ -66,19 +66,25 @@ class InstagramChannel extends Channel
         return array();
     }
 
-    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null)
+    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null, $params = null)
     {
         $this->api       = new Client(self::API_URL);
         $this->client_id = $applicationId;
         $this->token     = $applicationToken;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false, $nextPageUrl = null)
     {
-        if (strpos($query, 'user:') === 0) {
+        $since = $this->decodeSince($since, $query);
+
+        if (isset($nextPageUrl)) {
+            $endpoint = str_replace(self::API_URL, '', $nextPageUrl);
+            $options = null;
+        }
+        else if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
-                    'client_id' => $this->client_id
+                    'access_token' => $this->token
                 )
             );
 
@@ -102,7 +108,7 @@ class InstagramChannel extends Channel
 
             $options = array(
                 'query' => array(
-                    'client_id' => $this->client_id
+                    'access_token' => $this->token
                 )
             );
 
@@ -125,7 +131,16 @@ class InstagramChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type, $pIncludeRaw);
+        $return = $this->parse($data, $type, $pIncludeRaw);
+
+        if (isset($data->pagination->next_url)) {
+            $newData = $this->fetch($query, $type, $since, $pIncludeRaw, $data->pagination->next_url);
+            if (isset($newData->data)) {
+                $return->data = array_merge($return->data, $newData->data);
+            }
+        }
+
+        return $return;
     }
 
     protected function parse(stdClass $data, $type, $pIncludeRaw = false)

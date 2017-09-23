@@ -9,17 +9,15 @@ use Guzzle\Http\Client,
     \DateTime,
     \DateInterval;
 
-class GooglePlusChannel extends Channel
+class JuicerChannel extends Channel
 {
-    const API_URL                = 'https://www.googleapis.com/plus/v1/';
+    const API_URL                = 'https://www.juicer.io/api/feeds/';
 
-    const ENDPOINT_SEARCH        = 'activities';
-    const ENDPOINT_USER          = 'people/%s';
-    const ENDPOINT_SEARCH_USER   = 'people/%s/activities/collection';
+    const ENDPOINT_SEARCH        = '%s';
 
-    const RESULTS_PER_PAGE       = 20;  // max. 20
+    const RESULTS_PER_PAGE       = 100;  // max. 100
 
-    const TYPE_IMAGE             = 'photo';
+    const TYPE_IMAGE             = 'image';
     const TYPE_VIDEO             = 'video';
 
     private $api;
@@ -45,14 +43,13 @@ class GooglePlusChannel extends Channel
 
     private static function _parseImages(stdClass $pEntry)
     {
-        if (isset($pEntry->object->attachments[0])
-            and isset($pEntry->object->attachments[0]->objectType)
-            and $pEntry->object->attachments[0]->objectType == self::TYPE_IMAGE
-            and isset($pEntry->object->attachments[0]->image->url)
-            and isset($pEntry->object->attachments[0]->fullImage->url)) {
+        $type = self::TYPE_IMAGE;
+        if (isset($pEntry->{$type})
+            and !empty($pEntry->{$type})
+            and (strpos($pEntry->{$type}, 'safe_image.php') === false)) {
             return array(
-                'source' => $pEntry->object->attachments[0]->fullImage->url,
-                'thumb'  => $pEntry->object->attachments[0]->image->url,
+                'source' => $pEntry->{$type},
+                'thumb'  => $pEntry->{$type},
                 'type'   => Channel::TYPE_IMAGE
             );
         }
@@ -62,14 +59,12 @@ class GooglePlusChannel extends Channel
 
     private static function _parseVideos(stdClass $pEntry)
     {
-        if (isset($pEntry->object->attachments[0])
-            and isset($pEntry->object->attachments[0]->objectType)
-            and $pEntry->object->attachments[0]->objectType == self::TYPE_VIDEO
-            and isset($pEntry->object->attachments[0]->image->url)
-            and isset($pEntry->object->attachments[0]->embed->url)) {
+        $type = self::TYPE_VIDEO;
+        if (isset($pEntry->{$type})
+            and !empty($pEntry->{$type})) {
             return array(
-                'source' => $pEntry->object->attachments[0]->embed->url,
-                'thumb'  => $pEntry->object->attachments[0]->image->url,
+                'source' => $pEntry->{$type},
+                'thumb'  => $pEntry->{$type},
                 'type'   => Channel::TYPE_VIDEO
             );
         }
@@ -81,29 +76,33 @@ class GooglePlusChannel extends Channel
     {
         $this->api     = new Client(self::API_URL);
         $this->api_key = $applicationId;
+        $this->params  = $params;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw = false, $nextPageToken = null)
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false, $pageNum = 1)
     {
         $since = $this->decodeSince($since, $query, true);
 
-        $options = array(
-            'query' => array(
-                'key' => $this->api_key,
-                'maxResults' => self::RESULTS_PER_PAGE
-            )
-        );
-        if (isset($nextPageToken)) {
-            $options['query']['pageToken'] = $nextPageToken;
-        }
         if (strpos($query, 'user:') === 0) {
-            $endpoint = sprintf(self::ENDPOINT_USER, substr($query, 5));
+            throw new Exception("'user:' not supported for {get_class()}");
         } else if (strpos($query, 'from:') === 0) {
-            $endpoint = sprintf(self::ENDPOINT_SEARCH_USER, substr($query, 5));
+            throw new Exception("'from:' not supported for {get_class()}");
         } else {
-            $options['query']['query'] = $query;
-            $options['query']['orderBy'] = 'recent';
-            $endpoint = self::ENDPOINT_SEARCH;
+            $options = array(
+                'query' => array(
+                    'per' => self::RESULTS_PER_PAGE,
+                    'page' => $pageNum
+                )
+            );
+            if (isset($since)) {
+                $options['query']['starting_at'] = $since->format('Y-m-d H:i');
+            }
+            if (isset($this->params)) {
+                if (isset($this->params['filter'])) {
+                    $options['query']['filter'] = $this->params['filter'];
+                }
+            }
+            $endpoint = sprintf(self::ENDPOINT_SEARCH, $this->api_key);
         }
 
         $endpoint = trim($endpoint);
@@ -120,12 +119,12 @@ class GooglePlusChannel extends Channel
 
         $return = $this->parse($data, $type, $pIncludeRaw, $since);
 
-        if (isset($return->original_data_count) && ($return->original_data_count >= self::RESULTS_PER_PAGE) && isset($data->nextPageToken)) {
-            $newData = $this->fetch($query, $type, $since, $pIncludeRaw, $data->nextPageToken);
+        if (isset($return->original_data_count) && ($return->original_data_count >= self::RESULTS_PER_PAGE)) {
+            $newData = $this->fetch($query, $type, $since, $pIncludeRaw, $pageNum + 1);
             $return = $this->handleNewPage($return, $newData);
         }
 
-        if (!isset($nextPageToken) && isset($return->new_since)) {
+        if ($pageNum === 1) {
             $return->new_since = $return->new_since->format(self::ISO_8601_FORMAT);
         }
 
@@ -155,14 +154,14 @@ class GooglePlusChannel extends Channel
                 break;
         }
 
-        if (isset($data->items) and is_array($data->items)) {
+        if (isset($data->posts->items) and is_array($data->posts->items)) {
             $results = array();
 
-            foreach ($data->items as $entry) {
+            foreach ($data->posts->items as $entry) {
                 if (isset($parseType)) {
                     if ($parseType === '_parseText'
-                        and (! isset($entry->object->content)
-                        or empty($entry->object->content))) {
+                        and (! isset($entry->unformatted_message)
+                        or empty($entry->unformatted_message))) {
                         continue;
                     }
 
@@ -177,31 +176,26 @@ class GooglePlusChannel extends Channel
 
                 if ($parseType === '_parseText' or ! isset($parseType) or ! empty($partialData)) {
                     $result                   = new stdClass;
-                    $result->id               = $entry->id;
-                    $result->created_at       = date('Y-m-d H:i:s', strtotime($entry->published));
-                    $result->created_at_orig  = $entry->published;
-                    $result->description      = (isset($entry->object->content)) ? $entry->object->content : '';
-                    $result->link             = $entry->url;
+                    $result->id               = $entry->external_id;
+                    $result->created_at       = date('Y-m-d H:i:s', strtotime($entry->external_created_at));
+                    $result->created_at_orig  = $entry->external_created_at;
+                    $result->description      = (isset($entry->unformatted_message)) ? $entry->unformatted_message : '';
+                    $result->link             = $entry->full_url;
                     $result->type             = Channel::TYPE_TEXT;
 
                     $result->author           = new stdClass;
-                    $result->author->id       = $entry->actor->id;
+                    $result->author->id       = $entry->poster_id;
 
-                    if (isset($entry->actor->image->url)) {
-                        $result->author->avatar  = $entry->actor->image->url;
+                    if (isset($entry->poster_image)) {
+                        $result->author->avatar  = $entry->poster_image;
                     } else {
                         $result->author->avatar  = '';
                     }
 
-                    $result->author->fullname = $entry->actor->displayName;
+                    $result->author->fullname = '';
 
-                    $url                      = $entry->actor->url;
-                    $urlArr                   = explode('/', $url);
-                    $result->author->username = end($urlArr);
-
-                    if (ctype_digit($result->author->username)) {
-                        $result->author->username = '';
-                    }
+                    $url                      = $entry->poster_url;
+                    $result->author->username = $entry->poster_name;
 
                     $result->source = '';
                     $result->thumb  = '';

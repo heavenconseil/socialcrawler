@@ -13,10 +13,12 @@ class TwitterChannel extends Channel
     const SITE_URL        = 'https://twitter.com/';
     const API_URL         = 'https://api.twitter.com/1.1';
 
-    const TYPE_PHOTO      = 'photo';
-
     const ENDPOINT_SEARCH = 'search/tweets.json';
     const ENDPOINT_USER   = 'users/show.json';
+
+    const RESULTS_PER_PAGE = 100;   // max. 100
+
+    const TYPE_PHOTO      = 'photo';
 
     private $api;
 
@@ -47,7 +49,7 @@ class TwitterChannel extends Channel
         return array();
     }
 
-    public function __construct($applicationId, $applicationSecret, $applicationToken = null)
+    public function __construct($applicationId, $applicationSecret, $applicationToken = null, $params = null)
     {
         $this->api = new Client(self::API_URL);
         $this->api->addSubscriber(new OauthPlugin(array(
@@ -58,6 +60,8 @@ class TwitterChannel extends Channel
 
     public function fetch($query, $type, $since = null, $pIncludeRaw = false)
     {
+        $since = $this->decodeSince($since, $query);
+
         if (strpos($query, 'user:') === 0) {
             $options = array(
                 'query' => array(
@@ -85,7 +89,7 @@ class TwitterChannel extends Channel
                 'query' => array(
                     'q'           => urlencode($query),
                     'result_type' => 'recent',
-                    'count'       => 100
+                    'count'       => self::RESULTS_PER_PAGE
                 )
             );
 
