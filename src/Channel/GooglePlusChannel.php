@@ -1,22 +1,23 @@
 <?php
-/**
- * @todo Implement search
- */
-
 namespace SocialCrawler\Channel;
 
 use Guzzle\Http\Client,
     \Guzzle\Http\Exception\ClientErrorResponseException,
     \SocialCrawler\Crawler,
     \Exception,
-    \stdClass;
+    \stdClass,
+    \DateTime,
+    \DateInterval;
 
 class GooglePlusChannel extends Channel
 {
     const API_URL                = 'https://www.googleapis.com/plus/v1/';
 
+    const ENDPOINT_SEARCH        = 'activities';
     const ENDPOINT_USER          = 'people/%s';
-    const ENDPOINT_USER_STATUSES = 'people/%s/activities/public';
+    const ENDPOINT_SEARCH_USER   = 'people/%s/activities/collection';
+
+    const RESULTS_PER_PAGE       = 20;  // max. 20
 
     const TYPE_IMAGE             = 'photo';
     const TYPE_VIDEO             = 'video';
@@ -76,34 +77,33 @@ class GooglePlusChannel extends Channel
         return array();
     }
 
-    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null)
+    public function __construct($applicationId, $applicationSecret = null, $applicationToken = null, $params = null)
     {
         $this->api     = new Client(self::API_URL);
         $this->api_key = $applicationId;
     }
 
-    public function fetch($query, $type, $since = null, $pIncludeRaw = false)
+    public function fetch($query, $type, $since = null, $pIncludeRaw = false, $nextPageToken = null)
     {
-        if (strpos($query, 'user:') === 0) {
-            $options = array(
-                'query' => array(
-                    'key' => $this->api_key
-                )
-            );
+        $since = $this->decodeSince($since, $query, true);
 
+        $options = array(
+            'query' => array(
+                'key' => $this->api_key,
+                'maxResults' => self::RESULTS_PER_PAGE
+            )
+        );
+        if (isset($nextPageToken)) {
+            $options['query']['pageToken'] = $nextPageToken;
+        }
+        if (strpos($query, 'user:') === 0) {
             $endpoint = sprintf(self::ENDPOINT_USER, substr($query, 5));
         } else if (strpos($query, 'from:') === 0) {
-            $options = array(
-                'query' => array(
-                    'key' => $this->api_key
-                )
-            );
-
-            $endpoint = sprintf(self::ENDPOINT_USER_STATUSES, substr($query, 5));
+            $endpoint = sprintf(self::ENDPOINT_SEARCH_USER, substr($query, 5));
         } else {
-            $return       = new stdClass;
-            $return->data = array();
-            return $return;
+            $options['query']['query'] = $query;
+            $options['query']['orderBy'] = 'recent';
+            $endpoint = self::ENDPOINT_SEARCH;
         }
 
         $endpoint = trim($endpoint);
@@ -118,10 +118,21 @@ class GooglePlusChannel extends Channel
             return false;
         }
 
-        return $this->parse($data, $type, $pIncludeRaw);
+        $return = $this->parse($data, $type, $pIncludeRaw, $since);
+
+        if (isset($return->original_data_count) && ($return->original_data_count >= self::RESULTS_PER_PAGE) && isset($data->nextPageToken)) {
+            $newData = $this->fetch($query, $type, $since, $pIncludeRaw, $data->nextPageToken);
+            $return = $this->handleNewPage($return, $newData);
+        }
+
+        if (!isset($nextPageToken) && isset($return->new_since)) {
+            $return->new_since = $return->new_since->format(self::ISO_8601_FORMAT);
+        }
+
+        return $return;
     }
 
-    protected function parse(stdClass $data, $type, $pIncludeRaw = false)
+    protected function parse(stdClass $data, $type, $pIncludeRaw = false, $since = null)
     {
         $return = new stdClass;
         $return->data = array();
@@ -168,6 +179,7 @@ class GooglePlusChannel extends Channel
                     $result                   = new stdClass;
                     $result->id               = $entry->id;
                     $result->created_at       = date('Y-m-d H:i:s', strtotime($entry->published));
+                    $result->created_at_orig  = $entry->published;
                     $result->description      = (isset($entry->object->content)) ? $entry->object->content : '';
                     $result->link             = $entry->url;
                     $result->type             = Channel::TYPE_TEXT;
@@ -208,8 +220,9 @@ class GooglePlusChannel extends Channel
                 }
             }
 
-            $return->new_since = NULL;
-            $return->data      = $results;
+            $return->data = $results;
+            $return = $this->removeOldEntries($return, $since);
+
         } else if (isset($data->id)) {
             $return->data = new stdClass;
 
